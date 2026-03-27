@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donor Management | BloodLife</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .contact-hint {
+            font-size: 0.875em;
+            color: #6c757d !important;
+        }
+        .donor-avatar {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+        }
+        .donation-input {
+            max-width: 150px;
+        }
+        .last-donation {
+            white-space: nowrap;
+        }
+        .action-buttons .btn {
+            width: 35px;
+            height: 35px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-backdrop.show {
+            opacity: 0.5 !important;
+            z-index: 1040 !important;
+        }
+        .modal {
+            z-index: 1050 !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <div id="header"></div>
+
+    <!-- Main Content -->
+    <main class="container py-5 mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-danger"><i class="fas fa-users me-2"></i>Donor Management</h2>
+            <div class="d-flex gap-3">
+                <input type="text" id="searchInput" class="form-control" placeholder="Search donors...">
+                <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#addDonorModal">
+                    <i class="fas fa-plus me-2"></i>Add New Donor
+                </button>
+            </div>
+        </div>
+
+        <!-- Donor Table -->
+        <div class="card shadow">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-danger text-white">
+                            <tr>
+                                <th>Donor</th>
+                                <th>Blood Type</th>
+                                <th>Age</th>
+                                <th>Contact</th>
+                                <th>Donated Amount</th>
+                                <th>Date of Donation</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="donorTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center py-5">
+                                    <div class="spinner-border text-danger" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <!-- Add Donor Modal -->
+    <div class="modal fade" id="addDonorModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>New Donor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="addDonorForm">
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" class="form-control" name="DonorName" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Blood Type</label>
+                                <select class="form-select" name="bloodType" required>
+                                    <option value="">Select Blood Type</option>
+                                    <option>A+</option>
+                                    <option>A-</option>
+                                    <option>B+</option>
+                                    <option>B-</option>
+                                    <option>O+</option>
+                                    <option>O-</option>
+                                    <option>AB+</option>
+                                    <option>AB-</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Age</label>
+                                <input type="number" class="form-control" name="age" min="18" max="65" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Contact Number</label>
+                                <input type="tel" class="form-control" name="contact" 
+                                    pattern="03\d{2}-\d{7}" 
+                                    title="03XX-XXXXXXX format required"
+                                    required>
+                                <small class="form-text contact-hint">Format: 03XX-XXXXXXX</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Initial Donation (ml)</label>
+                                <input type="number" class="form-control donation-input" 
+                                       name="initialDonation" min="0" max="500" step="50" value="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Save Donor</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Donor Modal -->
+    <div class="modal fade" id="editDonorModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="fas fa-user-edit me-2"></i>Edit Donor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editDonorForm">
+                    <input type="hidden" id="editDonorId">
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="editName" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Blood Type</label>
+                                <select class="form-select" id="editBloodType" required>
+                                    <option value="">Select Blood Type</option>
+                                    <option>A+</option>
+                                    <option>A-</option>
+                                    <option>B+</option>
+                                    <option>B-</option>
+                                    <option>O+</option>
+                                    <option>O-</option>
+                                    <option>AB+</option>
+                                    <option>AB-</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Age</label>
+                                <input type="number" class="form-control" id="editAge" min="18" max="65" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Contact Number</label>
+                                <input type="tel" class="form-control" id="editContact" 
+                                    pattern="03\d{2}-\d{7}" 
+                                    title="03XX-XXXXXXX format required"
+                                    required>
+                                <small class="form-text contact-hint">Format: 03XX-XXXXXXX</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Update Donor</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="fas fa-trash me-2"></i>Confirm Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this donor? This action cannot be undone.</p>
+                    <input type="hidden" id="deleteDonorId">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div id="footer"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Component loading
+        const loadComponents = async () => {
+            try {
+                const [header, footer] = await Promise.all([
+                    fetch('../components/header.html').then(r => r.text()),
+                    fetch('../components/footer.html').then(r => r.text())
+                ]);
+                document.getElementById('header').innerHTML = header;
+                document.getElementById('footer').innerHTML = footer;
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    if(link.href.endsWith('donors.html')) link.classList.add('active');
+                });
+            } catch (error) {
+                console.error('Component loading error:', error);
+            }
+        };
+
+        // Donor data management
+        let allDonors = [];
+        
+        const loadDonors = async () => {
+            try {
+                const response = await fetch('http://localhost:3000/api/donors');
+                if (!response.ok) throw new Error('Failed to load donors');
+                allDonors = await response.json();
+                renderDonors(allDonors);
+            } catch (error) {
+                showError(error.message);
+            }
+        };
+
+        const renderDonors = (donors) => {
+            const tbody = document.getElementById('donorTableBody');
+            tbody.innerHTML = donors.map(donor => `
+                <tr data-donor-id="${donor.DonorID}">
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <img src="../assets/img/donor-avatar.png" 
+                                class="donor-avatar rounded-circle me-2">
+                            <div>
+                                <div class="fw-medium">${donor.DonorName}</div>
+                                <small class="text-muted">ID: ${donor.DonorID}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge bg-danger">${donor.BloodType}</span></td>
+                    <td>${donor.Age}</td>
+                    <td>${donor.ContactNumber}</td>
+                    <td>${donor.DonatedAmount ?? 0} ml</td>
+                    <td class="last-donation">
+                        ${donor.DateOfDonation ? new Date(donor.DateOfDonation).toLocaleDateString() : 'N/A'}
+                    </td>
+                    <td class="action-buttons">
+                        <button class="btn btn-sm btn-outline-danger edit-btn">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger delete-btn ms-2">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = allDonors.filter(donor =>
+                donor.DonorName.toLowerCase().includes(query) ||
+                donor.BloodType.toLowerCase().includes(query) ||
+                donor.ContactNumber.toLowerCase().includes(query)
+            );
+            renderDonors(filtered);
+        });
+
+        // Add donor handler
+        document.getElementById('addDonorForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            const donorData = {
+                DonorName: formData.get('DonorName'),
+                BloodType: formData.get('bloodType'),
+                Age: formData.get('age'),
+                ContactNumber: formData.get('contact'),
+                InitialDonation: parseFloat(formData.get('initialDonation')) || 0
+            };
+
+            if (!/^03\d{2}-\d{7}$/.test(donorData.ContactNumber)) {
+                alert('Contact number must be in 03XX-XXXXXXX format');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/api/donors', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(donorData)
+                });
+
+                if (!response.ok) throw new Error('Failed to add donor');
+                
+                e.target.reset();
+                bootstrap.Modal.getInstance(document.getElementById('addDonorModal')).hide();
+                await loadDonors();
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        });
+
+        // Edit donor handlers
+        document.addEventListener('click', async (e) => {
+            if (e.target.closest('.edit-btn')) {
+                const donorId = e.target.closest('tr').dataset.donorId;
+                try {
+                    const response = await fetch(`http://localhost:3000/api/donors/${donorId}`);
+                    if (!response.ok) throw new Error('Failed to fetch donor');
+                    const donor = await response.json();
+                    
+                    document.getElementById('editDonorId').value = donor.DonorID;
+                    document.getElementById('editName').value = donor.DonorName;
+                    document.getElementById('editBloodType').value = donor.BloodType;
+                    document.getElementById('editAge').value = donor.Age;
+                    document.getElementById('editContact').value = donor.ContactNumber;
+                    
+                    new bootstrap.Modal(document.getElementById('editDonorModal')).show();
+                } catch (error) {
+                    showError(error.message);
+                }
+            }
+        });
+
+        document.getElementById('editDonorForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const donorId = document.getElementById('editDonorId').value;
+            const donorData = {
+                DonorName: document.getElementById('editName').value,
+                BloodType: document.getElementById('editBloodType').value,
+                Age: document.getElementById('editAge').value,
+                ContactNumber: document.getElementById('editContact').value
+            };
+
+            if (!/^03\d{2}-\d{7}$/.test(donorData.ContactNumber)) {
+                alert('Contact number must be in 03XX-XXXXXXX format');
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/donors/${donorId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(donorData)
+                });
+
+                if (!response.ok) throw new Error('Failed to update donor');
+                
+                bootstrap.Modal.getInstance(document.getElementById('editDonorModal')).hide();
+                await loadDonors();
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        });
+
+        // Delete handlers
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.delete-btn')) {
+                const donorId = e.target.closest('tr').dataset.donorId;
+                document.getElementById('deleteDonorId').value = donorId;
+                new bootstrap.Modal(document.getElementById('deleteModal')).show();
+            }
+        });
+
+        document.getElementById('confirmDelete').addEventListener('click', async () => {
+            const donorId = document.getElementById('deleteDonorId').value;
+            try {
+                const response = await fetch(`http://localhost:3000/api/donors/${donorId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Failed to delete donor');
+                
+                bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                await loadDonors();
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        });
+
+        // Error handling
+        const showError = (message) => {
+            document.getElementById('donorTableBody').innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center text-danger py-4">
+                        ${message}
+                    </td>
+                </tr>`;
+        };
+
+        // Initialize
+        (async () => {
+            await loadComponents();
+            await loadDonors();
+        })();
+    </script>
+</body>
+</html>

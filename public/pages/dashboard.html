@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | BloodLife</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .stat-card {
+            transition: transform 0.3s;
+            border-left: 4px solid #dc3545;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .chart-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="header"></div>
+    <main class="container py-5 mt-5">
+        <div class="row g-4 mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="text-danger"><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+                <div class="badge bg-danger">
+                    <div class="stat-card card shadow h-50">
+                        <div class="card-body text-center">
+                            <button id="generateReport" class="btn btn-danger w-100 h-100">
+                                <i class="fas fa-file-pdf fa-2x mb-2"></i><br>
+                                Generate Full Report
+                            </button>
+                        </div>
+                    </div>
+                </div
+            ></div>
+            <div class="col-md-3">
+                <div class="stat-card card shadow h-100">
+                    <div class="card-body">
+                        <h5 class="text-danger"><i class="fas fa-users"></i> Total Donors</h5>
+                        <h2 id="totalDonors" class="mt-3">...</h2>
+                        <div class="spinner-border text-danger spinner-border-sm" role="status"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card card shadow h-100">
+                    <div class="card-body">
+                        <h5 class="text-danger"><i class="fas fa-tint"></i> Total Blood</h5>
+                        <h2 id="totalBlood" class="mt-3">...</h2>
+                        <div class="spinner-border text-danger spinner-border-sm" role="status"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card card shadow h-100">
+                    <div class="card-body">
+                        <h5 class="text-danger"><i class="fas fa-hand-holding-medical"></i> Pending Requests</h5>
+                        <h2 id="pendingRequests" class="mt-3">...</h2>
+                        <div class="spinner-border text-danger spinner-border-sm" role="status"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card card shadow h-100">
+                    <div class="card-body">
+                        <h5 class="text-danger"><i class="fas fa-check-circle"></i> Fulfilled Requests</h5>
+                        <h2 id="fulfilledRequests" class="mt-3">...</h2>
+                        <div class="spinner-border text-danger spinner-border-sm" role="status"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card card shadow h-100">
+                    <div class="card-body">
+                        <h5 class="text-danger"><i class="fas fa-chart-line"></i> Recent Donations</h5>
+                        <h2 id="recentDonations" class="mt-3">...</h2>
+                        <div class="spinner-border text-danger spinner-border-sm" role="status"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="chart-container">
+                    <h5 class="text-danger mb-4"><i class="fas fa-chart-bar"></i> Blood Demand Trends</h5>
+                    <canvas id="demandChart"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="chart-container">
+                    <h5 class="text-danger mb-4"><i class="fas fa-chart-pie"></i> Inventory Distribution</h5>
+                    <canvas id="inventoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorAlert" class="alert alert-danger mt-4 d-none">
+            Failed to load dashboard data. Please try again later.
+        </div>
+
+        <!-- Report Modal -->
+        <div class="modal fade" id="reportModal" tabindex="-1">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">Blood Donation Report</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="reportContent">
+                        <div class="spinner-border text-danger" role="status"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <div id="footer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const elements = {
+            totalDonors: document.getElementById('totalDonors'),
+            totalBlood: document.getElementById('totalBlood'),
+            pendingRequests: document.getElementById('pendingRequests'),
+            fulfilledRequests: document.getElementById('fulfilledRequests'),
+            recentDonations: document.getElementById('recentDonations'),
+            errorAlert: document.getElementById('errorAlert')
+        };
+
+        function updateContent(element, value) {
+            if (element) element.textContent = value;
+        }
+
+        async function loadComponents() {
+            try {
+                const header = await fetch('../components/header.html');
+                if (!header.ok) throw new Error('Header failed to load');
+                document.getElementById('header').innerHTML = await header.text();
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    if(link.href.endsWith('dashboard.html')) {
+                        link.classList.add('active');
+                    }
+                });
+
+                const footer = await fetch('../components/footer.html');
+                if (!footer.ok) throw new Error('Footer failed to load');
+                document.getElementById('footer').innerHTML = await footer.text();
+
+            } catch (error) {
+                console.error('Component loading error:', error);
+            }
+        }
+
+        // Helper functions (MOVE THESE BEFORE THE EVENT LISTENER)
+        const getSectionTitle = (type) => {
+            const titles = {
+                totalDonors: 'Total Donors',
+                totalDonations: 'Donation Summary',
+                inventory: 'Blood Inventory',
+                bloodRequests: 'Blood Requests',
+                donorDonations: 'Donor Contributions',
+                fulfillmentStatus: 'Fulfillment Status'
+            };
+            return titles[type] || type;
+        };
+
+        const formatSectionContent = (section) => {
+            if (!section.data || section.data.length === 0) return '<div class="text-muted">No data available</div>';
+            
+            switch(section.type) {
+                case 'totalDonors':
+                    return `<h3>${section.data[0].TotalDonors}</h3>`;
+                    
+                case 'totalDonations':
+                    return `
+                        <p>Total Donations: ${section.data[0].TotalDonations}</p>
+                        <p>Total Amount: ${section.data[0].TotalAmountDonated} units</p>
+                    `;
+                    
+                case 'inventory':
+                    return `
+                        <div class="row">
+                            ${section.data.map(item => `
+                                <div class="col-md-3 mb-2">
+                                    ${item.BloodType}: <strong>${item.Quantity} units</strong>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    
+                default:
+                    // FIX: Use backticks instead of single quotes
+                    return `<pre>${JSON.stringify(section.data, null, 2)}</pre>`;
+            }
+        };
+
+        document.getElementById('generateReport').addEventListener('click', async () => {
+            const modal = new bootstrap.Modal('#reportModal');
+            const reportContent = document.getElementById('reportContent');
+            
+            try {
+                reportContent.innerHTML = '<div class="spinner-border text-danger" role="status"></div>';
+                modal.show();
+                
+                const response = await fetch('http://localhost:3000/api/generate-report');
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.details || 'Failed to generate report');
+                }
+                
+                const report = await response.json();
+                
+                // Build report HTML
+                reportContent.innerHTML = `
+                    <div class="row g-3">
+                        ${report.sections.map(section => `
+                            <div class="col-12">
+                                <div class="card shadow-sm">
+                                    <div class="card-body">
+                                        <h6 class="text-danger mb-3">${getSectionTitle(section.type)}</h6>
+                                        ${formatSectionContent(section)}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Report error:', error);
+                reportContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <strong>Error:</strong> ${error.message}
+                        ${error.details ? `<div class="mt-2">${error.details}</div>` : ''}
+                    </div>
+                `;
+            }
+        });
+
+        async function loadDashboardData() {
+            try {
+                const [donorsRes, inventoryRes, requestsRes] = await Promise.all([
+                    fetch('http://localhost:3000/api/donors'),
+                    fetch('http://localhost:3000/api/inventory'),
+                    fetch('http://localhost:3000/api/blood-requests')
+                ]);
+
+                if (!donorsRes.ok) throw new Error(`Donors: ${donorsRes.status}`);
+                if (!inventoryRes.ok) throw new Error(`Inventory: ${inventoryRes.status}`);
+                if (!requestsRes.ok) throw new Error(`Requests: ${requestsRes.status}`);
+
+                const [donors, inventory, requests] = await Promise.all([
+                    donorsRes.json(),
+                    inventoryRes.json(),
+                    requestsRes.json()
+                ]);
+
+                const pending = requests.filter(r => !r.Fulfilled);
+                const fulfilled = requests.filter(r => r.Fulfilled);
+
+                updateContent(elements.totalDonors, donors.length || 0);
+                updateContent(elements.totalBlood, `${inventory.reduce((sum, item) => sum + (Number(item.Quantity) || 0), 0)} Units`);
+                updateContent(elements.pendingRequests, pending.length);
+                updateContent(elements.fulfilledRequests, fulfilled.length);
+                updateContent(elements.recentDonations, donors.filter(d => d.DateOfDonation).length || 0);
+
+                initializeCharts(inventory, requests);
+
+            } catch (error) {
+                console.error('Data loading error:', error);
+                elements.errorAlert.classList.remove('d-none');
+            } finally {
+                document.querySelectorAll('.spinner-border').forEach(el => el.remove());
+            }
+        }
+
+        function initializeCharts(inventory, requests) {
+            new Chart(document.getElementById('demandChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Blood Requests',
+                        data: requests.slice(-6).map(r => r.Quantity),
+                        borderColor: '#FFFF00', // Dark red color
+                        backgroundColor: 'rgba(139, 0, 0, 0.1)', // Semi-transparent dark red
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#FFFFFF',
+                        pointBorderColor: '#FFFF00',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Units Requested'
+                            }
+                        }
+                    }
+                }
+            });
+
+            new Chart(document.getElementById('inventoryChart').getContext('2d'), {
+                type: 'pie',
+                data: {
+                    labels: inventory.map(i => i.BloodType),
+                    datasets: [{
+                        data: inventory.map(i => i.Quantity),
+                        backgroundColor: [
+                            '#ff6384', '#36a2eb', '#ffce56', '#4bc0c0',
+                            '#9966ff', '#ff9f40', '#eb5757', '#2d9cdb'
+                        ]
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        (async () => {
+            await loadComponents();
+            await loadDashboardData();
+        })();
+    </script>
+</body>
+</html>
