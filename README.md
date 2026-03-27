@@ -2,9 +2,6 @@
 
 A modern web-based Blood Bank Management System built to simplify and automate the management of donors, blood inventory, and blood requests.
 
-> Developed by **Amal Jamil** and **Eisha Awais**  
-> For **Database Administration and Management Lab**
-
 
 ## 📌 Features
 
@@ -48,12 +45,11 @@ A modern web-based Blood Bank Management System built to simplify and automate t
 ## ⚙️ Setup Instructions
 
 ### 1. Clone the Repository
-git clone https://github.com/your-repo/bloodlife.git
-cd bloodlife
+clone https://github.com/ea-siddiqui/blood-donation-management-system.git
 
 ### 2. Setup SQL Server
 
-* Create the required tables using `schema.sql`
+* Create the required tables using `DAM.sql`
 * Add triggers and views as defined in your implementation
 * Insert some test data to verify
 
@@ -112,24 +108,3 @@ Go to `http://localhost:3000/public/dashboard.html` to view the app.
 │   ├── DAM.sql
 └── .env
 └── README.md
-
-
-## ✅ Project Highlights
-
-* Clean UI with modern UX.
-* Modular and maintainable Express-based server.
-* Realtime data sync via SQL triggers and views.
-* Full CRUD for donors with validation.
-* Charts and dashboards for effective visualization.
-* Academic-level normalization and schema design.
-
-
-## 👩‍💻 Authors
-
-* [Amal Jamil]
-* [Eisha Awais]
-
-
-## 📜 License
-
-This project is developed for academic purposes as part of the Database Administration and Management course. Not intended for production use.
