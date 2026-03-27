@@ -75,36 +75,3 @@ node server.js
 ### 5. Open in Browser
 
 Go to `http://localhost:3000/public/dashboard.html` to view the app.
-
-
-## 📁 Folder Structure
-
-📦 blood-donation-system/
-├── public/
-│   ├── assets/
-│       │── img/
-│       │── css/
-│            │── styles.css
-│       ├── js/
-│            │── app.js
-│            │── contact.js
-│            │── inventory.js
-│   ├── pages/
-│       │── donors.html
-│       │── inventory.html
-│       │── requests.html
-│       │── dashboard.html
-│       │── index.html
-│       │── contact.html
-│       │── about.html
-│   ├── components/
-│       │── header.html
-│       │── footer.html
-├── server/
-│   ├── server.js
-│   ├── config.js
-├── sql/
-│   ├── BloodDonationDB.png
-│   ├── DAM.sql
-└── .env
-└── README.md
